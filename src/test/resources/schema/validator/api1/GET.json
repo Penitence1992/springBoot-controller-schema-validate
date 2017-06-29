@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "User",
+  "description": "a login user input schema bean",
+  "type": "object",
+  "properties": {
+    "username": {
+      "description": "login user name",
+      "type": "string",
+      "length": "4"
+    },
+    "password": {
+      "type": "string",
+      "description": "login password"
+    }
+  },
+  "required": [
+    "username",
+    "password"
+  ]
+}

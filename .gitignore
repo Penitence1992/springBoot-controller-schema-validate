@@ -1,0 +1,11 @@
+.idea
+config/local.json
+build
+dist
+coverage
+log
+_book
+.gradle
+.classpath
+.project
+.settings

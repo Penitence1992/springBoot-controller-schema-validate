@@ -1,0 +1,93 @@
+group 'tech.ascs.cityworks'
+version '1.0.1'
+def artifactId = 'controller-schema-validator'
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'maven'
+apply plugin: 'jacoco'
+
+sourceCompatibility = 1.8
+
+buildscript {
+    ext {
+        springBootVersion = '1.5.3.RELEASE'
+    }
+    repositories {
+        mavenLocal()
+        maven{ url "http://maven.aliyun.com/nexus/content/groups/public/"}
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+ext {
+    springCloudVersion = 'Dalston.SR1'
+}
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+repositories {
+    maven{ url "http://maven.aliyun.com/nexus/content/groups/public/"}
+    mavenCentral()
+}
+
+dependencies {
+
+    compile('com.google.guava:guava')
+    compile('com.networknt:json-schema-validator:0.1.7')
+    compile('org.springframework.boot:spring-boot-starter-aop')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile('org.springframework.cloud:spring-cloud-commons')
+
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+
+install {
+    repositories.mavenInstaller {
+        pom.version = "$project.version"
+        pom.artifactId = "$artifactId"
+        pom.groupId = "$project.group"
+    }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: "http://pmaven.ascs.tech/") { // 仓库地址
+            // 这里配置上传账户的用户名和密码
+            authentication(userName: "pmaven", password: "private_maven")
+        }
+        pom.version = "$project.version"
+        pom.groupId = "$project.group"
+        pom.artifactId = "$artifactId"
+    }
+}
+
+
+jacoco {
+    toolVersion = "0.7.6.201602180812"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled true
+        xml.destination "${buildDir}/jacocoCsv.xml"
+        csv.destination "${buildDir}/jacocoCsv.csv"
+        html.destination "${buildDir}/jacocoHtml"
+    }
+}

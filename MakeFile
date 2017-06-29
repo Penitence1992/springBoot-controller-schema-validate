@@ -1,0 +1,22 @@
+.PHONY: build
+
+review:
+	@echo "Code Review"
+
+depend:
+	@echo "Depend"
+
+build:
+	gradle sourcesJar
+
+clean:
+	gradle clean
+
+test:
+	gradle test
+
+test_cov: test
+	gradle jacocoTestReport
+
+publish:
+	gradle uploadArchives
