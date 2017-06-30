@@ -25,12 +25,35 @@ public class Launch {
 ```
  
 ### 配置
- 
+
+#### 配置文件配置
+
  现在暂时有2个可配置属性
  
  `schema.path` : schema文件的基础路径
  
  `schema.basePackage` : 只对该路径下的方法进行校验处理
+ 
+#### 代码配置
+
+  如果想修改校验的切入方法,请加入如下代码即可:
+  
+```java
+
+@EnableSchemaValidation
+public class Launch {
+    public static void main(String[] args) {
+	    SpringApplication.run(Launch.class, args);
+    }
+	
+    //如下代码
+    @Bean
+    public AnnotationOperation annotationOperation(){
+        return () -> Sets.newHashSet(GetMapping.class);
+    }
+}
+
+```
  
 ### 项目构建
 
@@ -55,7 +78,7 @@ compile('tech.ascs.cityworks:controller-schema-validator:1.0.1')
 <dependency>
     <groupId>tech.ascs.cityworks</groupId>
     <artifactId>controller-schema-validator</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 </dependency>
 
 ```
