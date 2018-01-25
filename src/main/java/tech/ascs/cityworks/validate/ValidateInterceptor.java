@@ -8,7 +8,9 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.aop.aspectj.MethodInvocationProceedingJoinPoint;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import tech.ascs.cityworks.validate.base.ValidateMessageConvert;
 import tech.ascs.cityworks.validate.exception.ValidateFailException;
+import tech.ascs.cityworks.validate.utils.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
@@ -30,9 +32,10 @@ import java.util.Set;
 public class ValidateInterceptor  {
 
     private final ValidateComponent validateComponent;
-
-    public ValidateInterceptor(ValidateComponent validateComponent){
+    private final ValidateMessageConvert convert;
+    public ValidateInterceptor(ValidateComponent validateComponent, ValidateMessageConvert convert){
         this.validateComponent = validateComponent;
+        this.convert = convert;
     }
 
     @Around(value = "@annotation(org.springframework.web.bind.annotation.RequestMapping) ||" +
@@ -49,7 +52,7 @@ public class ValidateInterceptor  {
             Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
             Set<ValidationMessage> result = validateComponent.validate(request,method,proceedingJoinPoint.getArgs());
             if(result.size() > 0){
-                throw new ValidateFailException("Validate fail msg : " + result.toString());
+                throw new ValidateFailException(StringUtils.joinString(convert.convert(result), ","));
             }
         }
         return proceedingJoinPoint.proceed();

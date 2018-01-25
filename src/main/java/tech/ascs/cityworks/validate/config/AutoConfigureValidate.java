@@ -9,6 +9,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import tech.ascs.cityworks.validate.ValidateComponent;
 import tech.ascs.cityworks.validate.ValidateInterceptor;
+import tech.ascs.cityworks.validate.base.ValidateMessageConvert;
+import tech.ascs.cityworks.validate.convert.ChineseValidateMessageConvert;
 
 /**
  * Created by RenJie on 2017/6/29 0029.
@@ -32,10 +34,19 @@ public class AutoConfigureValidate {
     }
 
     @Bean
-    @ConditionalOnMissingBean(name = "validateInterceptor")
-    public ValidateInterceptor validateInterceptor(ValidateComponent validateComponent){
-        logger.info("No found bean {}, using default bean validateInterceptor",ValidateInterceptor.class.getName());
-        return new ValidateInterceptor(validateComponent);
+    @ConditionalOnMissingBean(name = "validateMessageConvert")
+    public ValidateMessageConvert validateMessageConvert(){
+        return new ChineseValidateMessageConvert();
     }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "validateInterceptor")
+    public ValidateInterceptor validateInterceptor(ValidateComponent validateComponent,
+                                                   ValidateMessageConvert convert){
+        logger.info("No found bean {}, using default bean validateInterceptor",ValidateInterceptor.class.getName());
+        return new ValidateInterceptor(validateComponent, convert);
+    }
+
+
 
 }

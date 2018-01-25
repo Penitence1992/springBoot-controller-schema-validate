@@ -11,8 +11,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import tech.ascs.cityworks.validate.base.RequestHandlerMapBean;
+import tech.ascs.cityworks.validate.base.RequestHandlerValidate;
+import tech.ascs.cityworks.validate.base.RequestQueryBean;
 import tech.ascs.cityworks.validate.exception.ValidateInitNotSchemaException;
+import tech.ascs.cityworks.validate.handler.factory.RequestHandlerMapBeanFactory;
+import tech.ascs.cityworks.validate.utils.ReflectTools;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -28,7 +31,7 @@ public class ValidateComponent {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private final Map<Method, RequestHandlerMapBean> cacheMapping = new HashMap<>();
+    private final Map<Method, RequestHandlerValidate> cacheMapping = new HashMap<>();
 
     private final ObjectMapper mapper;
 
@@ -43,7 +46,7 @@ public class ValidateComponent {
         mapping.getHandlerMethods().forEach((requestMappingInfo, handlerMethod) -> {
             if (StringUtils.isEmpty(basePackage) || handlerMethod.getShortLogMessage().contains(basePackage)) {
                 try {
-                    cacheMapping.put(handlerMethod.getMethod(), new RequestHandlerMapBean(handlerMethod, requestMappingInfo, schemaBasePath));
+                    cacheMapping.put(handlerMethod.getMethod(), RequestHandlerMapBeanFactory.newInstance(handlerMethod, requestMappingInfo, schemaBasePath));
                 } catch (ValidateInitNotSchemaException exception) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Init schema error : {}", exception.getMessage());
@@ -62,7 +65,7 @@ public class ValidateComponent {
                     RequestMethod requestMethod = RequestMethod.valueOf(request.getMethod());
                     if (!StringUtils.isEmpty(url) &&
                             bean.checkHasValidateComponent(requestMethod, url)) {
-                        Map map = buildValidateMap(bean, args);
+                        Map<String, Object> map = buildValidateMap(bean, args);
                         validateResult.addAll(bean.validate(requestMethod, url, convertMapToJsonNode(map)));
                     }
                 });
@@ -83,21 +86,7 @@ public class ValidateComponent {
         return returnData;
     }
 
-    private Object isJsonAndParse(MethodParameter methodParameter, Object data) {
-        Object returnData;
-        if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
-            if (data instanceof String) {
-                returnData = tryParseStringToMap(data.toString());
-            } else {
-                returnData = data;
-            }
-        } else {
-            returnData = data;
-        }
-        return returnData;
-    }
-
-    private String getRequestSourceUrl(RequestHandlerMapBean bean, HttpServletRequest request) {
+    private String getRequestSourceUrl(RequestHandlerValidate bean, HttpServletRequest request) {
         Set<String> urls = bean.getRequestMappingInfo().getPatternsCondition().getMatchingCondition(request).getPatterns();
         logger.debug("Found matching url count : {}", urls.size());
         if (urls.size() > 1) {
@@ -110,7 +99,7 @@ public class ValidateComponent {
         return urls.iterator().next();
     }
 
-    private JsonNode convertMapToJsonNode(Map map) {
+    private JsonNode convertMapToJsonNode(Map<String, Object> map) {
         try {
             String json = mapper.writeValueAsString(map);
             return mapper.readTree(json);
@@ -120,12 +109,54 @@ public class ValidateComponent {
         }
     }
 
-    private Map buildValidateMap(RequestHandlerMapBean bean, Object[] args) {
+    private Map<String, Object> buildValidateMap(RequestHandlerValidate bean, Object[] args) {
         Map<String, Object> map = new HashMap<>();
-        Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter ->
-                Optional.ofNullable(isJsonAndParse(methodParameter, args[methodParameter.getParameterIndex()])).ifPresent(data ->
-                        map.put(methodParameter.getParameterName(), data)
-                ));
+        Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter ->{
+                    Object data = args[methodParameter.getParameterIndex()];
+                    if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
+                        map.put(methodParameter.getParameterName(), parseRequestBody(data));
+                    }else{
+                        map.putAll(parseRequestParam(methodParameter, data));
+                    }
+                }
+        );
         return map;
+    }
+
+    private Map<String, Object> parseRequestParam(MethodParameter methodParameter, Object data){
+        Class parameterType = methodParameter.getParameterType();
+        Map<String, Object> returnData = new HashMap<>();
+        if(parameterType.getAnnotation(RequestQueryBean.class) != null){
+            returnData.putAll(parseObjectToMap(data));
+        }else if (parameterType.isAssignableFrom(Map.class)){
+            returnData.putAll((Map<String, Object>) data);
+        }else{
+            returnData.put(methodParameter.getParameterName(), data);
+        }
+        return returnData;
+    }
+
+    private Object parseRequestBody(Object data){
+        Object returnData;
+        if (data instanceof String) {
+            returnData = tryParseStringToMap(data.toString());
+        } else {
+            returnData = data;
+        }
+        return returnData;
+    }
+
+    private Map<String, Object> parseObjectToMap(Object data){
+        Map<String,Object> result = new HashMap<>();
+        Stream.of(data.getClass().getDeclaredMethods())
+                .map(Method::getName)
+                .filter(name -> name.startsWith("is") || name.startsWith("get"))
+                .forEach(name -> Optional.ofNullable(ReflectTools.invokeMethod(data, name)).ifPresent(obj -> {
+                    try {
+                        result.put(ReflectTools.parseMethodNameToFiledName(name), obj);
+                    } catch (NoSuchMethodException ignored) {
+                    }
+                }));
+        return result;
     }
 }

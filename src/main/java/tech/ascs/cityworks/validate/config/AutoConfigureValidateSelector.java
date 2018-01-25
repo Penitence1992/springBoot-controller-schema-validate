@@ -1,8 +1,6 @@
 package tech.ascs.cityworks.validate.config;
 
 import org.springframework.cloud.commons.util.SpringFactoryImportSelector;
-import org.springframework.context.annotation.AdviceMode;
-import org.springframework.context.annotation.AdviceModeImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 import tech.ascs.cityworks.validate.base.EnableSchemaValidation;
 

@@ -1,6 +1,7 @@
 package tech.ascs.cityworks.validate.base;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.ValidationMessage;
@@ -14,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,6 +29,8 @@ public class SchemaValidateComponent implements SchemaValidate {
     private final static Logger LOGGER = LoggerFactory.getLogger(SchemaValidateComponent.class);
 
     private final JsonSchema jsonSchema;
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     /**
      * 构造SchemaValidateComponent 类
@@ -46,11 +50,19 @@ public class SchemaValidateComponent implements SchemaValidate {
         }
     }
 
+    private SchemaValidateComponent(Map schema) throws IOException {
+        jsonSchema = JSON_SCHEMA_FACTORY.getSchema(mapper.writeValueAsString(schema));
+    }
+
     /**
      * 静态方法构造类
      */
     public static SchemaValidateComponent build(String schemaPath) throws IOException {
         return new SchemaValidateComponent(schemaPath);
+    }
+
+    public static SchemaValidateComponent buildFromMap(Map schema) throws IOException {
+        return new SchemaValidateComponent(schema);
     }
 
     public Set<ValidationMessage> doValidate(JsonNode jsonNode){
