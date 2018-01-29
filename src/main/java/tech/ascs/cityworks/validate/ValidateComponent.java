@@ -113,6 +113,7 @@ public class ValidateComponent {
         Map<String, Object> map = new HashMap<>();
         Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter ->{
                     Object data = args[methodParameter.getParameterIndex()];
+                    if(data == null) return;
                     if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
                         map.put(methodParameter.getParameterName(), parseRequestBody(data));
                     }else{

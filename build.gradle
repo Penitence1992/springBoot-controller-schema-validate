@@ -1,5 +1,5 @@
 group 'tech.ascs.cityworks'
-version '2.0.0'
+version '2.0.1'
 def artifactId = 'controller-schema-validator'
 
 apply plugin: 'java'
@@ -38,6 +38,7 @@ repositories {
 
 dependencies {
 
+    compile('com.esotericsoftware:reflectasm:1.11.3')
     compile('com.google.guava:guava')
     compile('com.networknt:json-schema-validator:0.1.7')
     compile('org.springframework.boot:spring-boot-starter-aop')
