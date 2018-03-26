@@ -10,6 +10,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tech.ascs.cityworks.validate.base.RequestHandlerValidate;
 import tech.ascs.cityworks.validate.base.RequestQueryBean;
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -69,7 +71,7 @@ public class ValidateComponent {
                         validateResult.addAll(bean.validate(requestMethod, url, convertMapToJsonNode(map)));
                     }
                 });
-        if(logger.isDebugEnabled()){
+        if (logger.isDebugEnabled()) {
             logger.debug("Validate Result : {}", validateResult);
         }
         return validateResult;
@@ -111,12 +113,12 @@ public class ValidateComponent {
 
     private Map<String, Object> buildValidateMap(RequestHandlerValidate bean, Object[] args) {
         Map<String, Object> map = new HashMap<>();
-        Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter ->{
+        Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter -> {
                     Object data = args[methodParameter.getParameterIndex()];
-                    if(data == null) return;
+                    if (data == null) return;
                     if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
                         map.put(methodParameter.getParameterName(), parseRequestBody(data));
-                    }else{
+                    } else {
                         map.putAll(parseRequestParam(methodParameter, data));
                     }
                 }
@@ -124,31 +126,39 @@ public class ValidateComponent {
         return map;
     }
 
-    private Map<String, Object> parseRequestParam(MethodParameter methodParameter, Object data){
+    private Map<String, Object> parseRequestParam(MethodParameter methodParameter, Object data) {
         Class parameterType = methodParameter.getParameterType();
         Map<String, Object> returnData = new HashMap<>();
-        if(parameterType.getAnnotation(RequestQueryBean.class) != null){
+        if (parameterType.getAnnotation(RequestQueryBean.class) != null) {
             returnData.putAll(parseObjectToMap(data));
-        }else if (parameterType.isAssignableFrom(Map.class)){
+        } else if (parameterType.isAssignableFrom(Map.class)) {
             returnData.putAll((Map<String, Object>) data);
-        }else{
+        } else if (parameterType.isAssignableFrom(MultipartFile.class)){
+            MultipartFile file = (MultipartFile) data;
+            if(Objects.nonNull(file) && !file.isEmpty()){
+                returnData.put(methodParameter.getParameterName(), file.getOriginalFilename());
+            }
+        } else {
             returnData.put(methodParameter.getParameterName(), data);
         }
         return returnData;
     }
 
-    private Object parseRequestBody(Object data){
+    private Object parseRequestBody(Object data) {
         Object returnData;
         if (data instanceof String) {
             returnData = tryParseStringToMap(data.toString());
         } else {
-            returnData = data;
+            Set<Map.Entry> entries = mapper.convertValue(data, Map.class).entrySet();
+            returnData = entries.stream()
+                    .filter(entry -> entry.getValue() != null)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
         return returnData;
     }
 
-    private Map<String, Object> parseObjectToMap(Object data){
-        Map<String,Object> result = new HashMap<>();
+    private Map<String, Object> parseObjectToMap(Object data) {
+        Map<String, Object> result = new HashMap<>();
         Stream.of(data.getClass().getDeclaredMethods())
                 .map(Method::getName)
                 .filter(name -> name.startsWith("is") || name.startsWith("get"))

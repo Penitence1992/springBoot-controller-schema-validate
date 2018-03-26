@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "User",
+  "description": "a login user input schema bean",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "file"
+    }
+  },
+  "required":["username"]
+}

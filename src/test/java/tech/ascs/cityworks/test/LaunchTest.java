@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
@@ -16,6 +17,9 @@ import org.springframework.web.context.WebApplicationContext;
 import tech.ascs.cityworks.Launch;
 
 import javax.annotation.PostConstruct;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 /**
  * Created by RenJie on 2017/6/29 0029.
@@ -101,5 +105,17 @@ public class LaunchTest extends MockMvcResultMatchers {
                 .content("{\"username\":\"ppppppp\"}");
         String result = mockMvc.perform(builder).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         Assert.assertEquals("return message must SUCCESS", "SUCCESS", result);
+    }
+
+    @Test
+    public void testDoValidateController6File() throws Exception {
+//        RequestBuilder builder = MockMvcRequestBuilders.post("/validator/api6")
+//                .contentType(MediaType.MULTIPART_FORM_DATA)
+//                .
+
+        RequestBuilder builder = MockMvcRequestBuilders.fileUpload("/validator/api6")
+                .file(new MockMultipartFile("username", new FileInputStream("/Users/penitence/setSkyNode/13_BK.jpg")));
+        String result = mockMvc.perform(builder).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        System.out.println(result);
     }
 }

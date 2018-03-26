@@ -3,7 +3,10 @@ package tech.ascs.cityworks;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import tech.ascs.cityworks.validate.base.EnableSchemaValidation;
+
+import java.util.Objects;
 
 /**
  * Created by RenJie on 2017/6/29 0029.
@@ -35,6 +38,14 @@ public class Launch {
 
     @PostMapping("/validator/api5")
     public String validateControllerRequestBodyBean(@RequestBody TestBean body){
+        return "SUCCESS";
+    }
+
+    @PostMapping("/validator/api6")
+    public String validateControllerWithFile(@RequestParam MultipartFile username){
+        if(Objects.isNull(username)){
+            return "FAIL";
+        }
         return "SUCCESS";
     }
 
