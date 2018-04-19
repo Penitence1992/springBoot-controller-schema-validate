@@ -34,6 +34,9 @@ public class ConvertYmlToSchema {
         schema.put("properties",convertToProperties(param, all));
         List<String> required = new ArrayList<>();
         param.forEach(p -> {
+            if(p.containsKey("$ref")){
+                p = parseRef(p.get("$ref").toString(), all);
+            }
             if(p.containsKey("required") && Boolean.valueOf(p.get("required").toString())){
                 required.add(p.get("name").toString());
             }
@@ -58,10 +61,14 @@ public class ConvertYmlToSchema {
 
     private static Map parseParam(Map param, Map all){
         Map property = new HashMap();
+        if(param.containsKey("$ref")){
+            String ref = param.get("$ref").toString();
+            param = parseRef(ref, all);
+        }
         String in = param.get("in").toString();
         if("query".equals(in)){
             Map content = new HashMap();
-            content.put("type", param.get("type"));
+            content.putAll(param);
             property.put(param.get("name"), content);
         }else if ("body".equals(in)){
             Map schema = (Map) param.get("schema");

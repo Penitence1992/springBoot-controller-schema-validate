@@ -1,0 +1,609 @@
+swagger: "2.0"
+info:
+  description: "UPM 统一服务管理平台接口文档"
+  version: "1.0.0"
+  title: "UPM-Service"
+host: "localhost"
+basePath: "/v1"
+tags:
+- name: "images"
+  description: "镜像管理相关接口列表"
+- name: "containers"
+  description: "容器实例管理接口列表"
+schemes:
+- "http"
+paths:
+  /images:
+    get:
+      tags:
+      - "images"
+      operationId: "getImagesPage"
+      summary: "获取镜像列表"
+      description: "获取简要镜像列表,不包含tag等信息,只有名称,简介等信息"
+      produces:
+      - "application/json"
+      parameters:
+      - in: query
+        name: "name"
+        required: true
+        type: "string"
+        description: "镜像名称模糊查询"
+        minLength: 3
+      - $ref: '#/parameters/page'
+      - $ref: '#/parameters/size'
+      responses:
+        200:
+          description: "查询成功"
+          schema:
+            $ref: '#/definitions/ImagesResponse'
+        404:
+          $ref: '#/responses/404Response'
+    post:
+      tags:
+      - images
+      operationId: "createNewImageProfile"
+      summary: "创建新的镜像"
+      description: "创建新的镜像属性,只是建立一个存储的列表,未建立具体的tag镜像"
+      produces:
+      - "application/json"
+      consumes:
+      - "application/json"
+      parameters:
+      - in: body
+        name: "image"
+        required: true
+        schema:
+          $ref: '#/definitions/ImagesCreateDetailsDTO'
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        400:
+          $ref: '#/responses/400Response'
+  /images/file:
+    post:
+      tags:
+      - images
+      operationId: "uploadImageByFile"
+      summary: "上传镜像文件,并且加载"
+      description: "上传源码打包出来的tar.gz包或者docker save出来的tar.gz包,并且打包或者加载到镜像仓库中"
+      consumes:
+      - "multipart/form-data"
+      produces:
+      - "application/json"
+      parameters:
+      - in: formData
+        type: file
+        name: "image"
+        description: "打包的文件"
+        required: true
+      - in: formData
+        type: string
+        name: "type"
+        description: "上传的包属于什么类型,package或者image"
+        enum:
+        - "package"
+        - "image"
+        required: true
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        300:
+          $ref: '#/responses/300Response'
+        400:
+          $ref: '#/responses/400Response'
+        403:
+          $ref: '#/responses/403Response'
+    put:
+      tags:
+      - images
+      operationId: "confirmFileUploadOp"
+      summary: "确认刚才对上传文件的操作"
+      description: "确认是否覆盖原有版本的文件或者新建新的镜像库"
+      parameters:
+      - in: query
+        name: "confirm"
+        type: boolean
+        description: "是否确认操作"
+        required: true
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        403:
+          $ref: '#/responses/403Response'
+  /images/{imageId}:
+    get:
+      tags:
+      - images
+      operationId: "getImageDetails"
+      summary: "获取镜像详情"
+      description: "获取镜像的详情,包括一些属性和tags和当前最新的ReadMe文档"
+      parameters:
+      - $ref: '#/parameters/imageId'
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/ImagesDetailsDTO'
+        404:
+          $ref: '#/responses/404Response'
+    put:
+      tags:
+      - images
+      operationId: "updateImageProfile"
+      summary: "更新镜像的profile信息"
+      description: "更新镜像的profile信息,source来源不可修改"
+      parameters:
+      - in: body
+        name: "image"
+        required: true
+        schema:
+          $ref: '#/definitions/ImagesUpdateDetailsDTO'
+      - $ref: '#/parameters/imageId'
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        404:
+          $ref: '#/responses/404Response'
+        400:
+          $ref: '#/responses/400Response'
+  /images/{imageId}/readme:
+    get:
+      tags:
+      - images
+      operationId: "getImageReadme"
+      summary: "获取镜像的readme文档"
+      description: "获取镜像的readme文档,默认为最新的,可以通过参数获取指定版本的"
+      parameters:
+      - $ref: '#/parameters/imageId'
+      - in: query
+        name: "tag"
+        description: "版本号"
+        type: string
+        required: false
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: "readme文档存储在数据库中的id"
+              context:
+                type: string
+                description: "readme文档的正文内容"
+        404:
+          $ref: '#/responses/404Response'
+  /image/{imageId}/readme/{tag}:
+    put:
+      tags:
+      - images
+      operationId: "updateReadmeContext"
+      summary: "更新版本的readme内容"
+      description: "更新版本的readme内容,如果不存在则新建"
+      parameters:
+      - $ref: '#/parameters/imageId'
+      - $ref: '#/parameters/tag'
+      - in: body
+        name: "readme"
+        required: true
+        schema:
+          type: object
+          required:
+          - context
+          properties:
+            context:
+              type: string
+              description: "readme文档的正文内容"
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        400:
+          $ref: '#/responses/400Response'
+        404:
+          $ref: '#/responses/404Response'
+  /images/{imageId}/tags:
+    get:
+      tags:
+      - images
+      operationId: "getImageTagsPage"
+      summary: "获取镜像的所有tags列表"
+      description: "获取镜像的tags列表信息"
+      parameters:
+      - $ref: '#/parameters/imageId'
+      - $ref: '#/parameters/page'
+      - $ref: '#/parameters/size'
+      - in: query
+        name: "name"
+        description: "根据tag查询"
+        required: false
+        type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/TagPageResponse'
+    post:
+      tags:
+      - images
+      operationId: "createNewTag"
+      summary: "创建新的tag"
+      description: "创建新的tag,如果不是来自公有镜像或者来自仓库地址构建则出错"
+      parameters:
+      - in: body
+        name: "tag"
+        required: true
+        description: "必要的信息"
+        schema:
+          type: object
+          required:
+          - tag
+          properties:
+            tag:
+              type: string
+      - $ref: '#/parameters/imageId'
+      responses:
+        200:
+          description: OK
+  /images/{imageId}/tags/{tag}/jsonschema:
+    get:
+      tags:
+      - images
+      operationId: "getImageTagJsonschema"
+      summary: "获取指定tag的jsonschema"
+      description: "获取指定tag的jsonschema"
+      parameters:
+      - $ref: '#/parameters/imageId'
+      - $ref: '#/parameters/tag'
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        404:
+          $ref: '#/responses/404Response'
+    put:
+      tags:
+      - images
+      operationId: "updateTagJsonSchema"
+      summary: "更新jsonschema"
+      description: "更新jsonschema,默认jsonschema为一个空对象"
+      parameters:
+      - $ref: '#/parameters/imageId'
+      - $ref: '#/parameters/tag'
+      - in: body
+        name: "schema"
+        description: "jsonschema"
+        required: true
+        schema:
+          type: object
+      responses:
+        200:
+          description: OK
+  /containers/configs:
+    get:
+      tags:
+      - containers
+      operationId: "getContainersConfigPage"
+      summary: "获取分页配置列表"
+      description: "返回一个目前有的配置列表的分页数据"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/ContainersConfigPageResponse'
+  /containers/configs/{configId}:
+    delete:
+      tags:
+      - containers
+      summary: "删除配置"
+      description: "删除指定的配置,同时删除停止服务"
+      parameters:
+      - $ref: '#/parameters/configId'
+      responses:
+        200:
+          description: OK
+
+  /containers/configs/{configId}/container:
+    post:
+      tags:
+      - containers
+      operationId: "startContainer"
+      summary: "启动特定配置的容器服务"
+      description: "根据配置去启动docker容器"
+      parameters:
+      - $ref: '#/parameters/configId'
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        403:
+          $ref: '#/responses/403Response'
+    delete:
+      tags:
+      - containers
+      operationId: "stopContainer"
+      summary: "停止并且删除容器服务"
+      description: "停止指定的容器和删除改容器实例"
+      parameters:
+      - $ref: '#/parameters/configId'
+      responses:
+        200:
+          $ref: '#/responses/200Response'
+        403:
+          $ref: '#/responses/403Response'
+
+definitions:
+  SameResponse:
+    type: object
+    description: "统一返回对象"
+    required:
+    - code
+    - msg
+    properties:
+      code:
+        $ref: '#/definitions/code'
+      msg:
+        type: string
+        description: "对这个状态的解析说明"
+      data:
+        type: object
+        description: "附加内容"
+  ImagesListDTO:
+    type: object
+    description: "镜像列表返回的内容"
+    required:
+    - name
+    - description
+    properties:
+      name:
+        type: string
+        description: "镜像名称"
+      description:
+        type: string
+        description: "镜像介绍"
+      imgUrl:
+        type: string
+        description: "镜像图标"
+      id:
+        type: string
+        description: "镜像id"
+      group:
+        type: string
+        description: "镜像的组名称"
+  ImagesDetailsDTO:
+    type: object
+    description: "镜像详情信息"
+    required:
+    - name
+    - description
+    properties:
+      name:
+        type: string
+        description: "镜像名称"
+      description:
+        type: string
+        description: "镜像介绍"
+      imgUrl:
+        type: string
+        description: "镜像图标"
+      id:
+        type: string
+        description: "镜像id"
+      group:
+        type: string
+        description: "镜像的组名称"
+      source:
+        type: string
+        description: "镜像的来源"
+  ImagesCreateDetailsDTO:
+    type: object
+    description: "镜像详情信息"
+    required:
+    - name
+    - description
+    properties:
+      name:
+        type: string
+        description: "镜像名称,由{组名}/{名称}组成"
+      description:
+        type: string
+        description: "镜像介绍"
+      imgUrl:
+        type: string
+        description: "镜像图标"
+      source:
+        type: string
+        description: "镜像的来源"
+  ImagesUpdateDetailsDTO:
+    type: object
+    description: "镜像详情信息"
+    properties:
+      description:
+        type: string
+        description: "镜像介绍"
+      imgUrl:
+        type: string
+        description: "镜像图标"
+  ImagesResponse:
+    type: object
+    description: "镜像列表返回内容"
+    properties:
+      content:
+        type: array
+        items:
+          $ref: '#/definitions/ImagesListDTO'
+      last:
+        type: boolean
+        description: "是否最后一页"
+      totalPages:
+        type: integer
+        description: "总页数"
+      totalElements:
+        type: integer
+        description: "总条数"
+      size:
+        type: integer
+        description: "当前页显示条数"
+      number:
+        type: integer
+        description: "当前页数,由0开始"
+      first:
+        type: boolean
+        description: "当前是否为第一页"
+      numberOfElements:
+        type: integer
+        description: "当前页的条数"
+  TagListDTO:
+    type: object
+    description: "tag列表返回的内容对象"
+    properties:
+      tagName:
+        type: string
+        description: "tag的名称"
+      imageId:
+        type: string
+        description: "imageId,为docker中的imageId"
+      size:
+        type: string
+        description: "镜像的大小"
+      updated:
+        type: string
+        description: "最后更新的时间"
+  TagPageResponse:
+    type: object
+    description: "tag列表返回内容"
+    properties:
+      content:
+        type: array
+        items:
+          $ref: '#/definitions/TagListDTO'
+      last:
+        type: boolean
+        description: "是否最后一页"
+      totalPages:
+        type: integer
+        description: "总页数"
+      totalElements:
+        type: integer
+        description: "总条数"
+      size:
+        type: integer
+        description: "当前页显示条数"
+      number:
+        type: integer
+        description: "当前页数,由0开始"
+      first:
+        type: boolean
+        description: "当前是否为第一页"
+      numberOfElements:
+        type: integer
+        description: "当前页的条数"
+  ContainersConfigPageDto:
+    type: object
+    description: "返回的列表的数据格式"
+    properties:
+      id:
+        description: "配置在数据库中的id"
+        type: string
+      name:
+        description: "服务的名称"
+        type: string
+      mode:
+        description: "服务在swarm中的运行模式"
+        type: string
+        enum:
+        - replicated
+        - global
+      image:
+        description: "基于哪个镜像进行部署的"
+        type: string
+      ports:
+        type: array
+        description: "映射端口列表"
+        items:
+          type: string
+          description: "端口映射,左侧为宿主机端口,右侧为容器端口"
+  ContainersConfigPageResponse:
+    type: object
+    description: "配置列表返回的内容"
+    properties:
+      content:
+        type: array
+        items:
+          $ref: '#/definitions/ContainersConfigPageDto'
+      last:
+        type: boolean
+        description: "是否最后一页"
+      totalPages:
+        type: integer
+        description: "总页数"
+      totalElements:
+        type: integer
+        description: "总条数"
+      size:
+        type: integer
+        description: "当前页显示条数"
+      number:
+        type: integer
+        description: "当前页数,由0开始"
+      first:
+        type: boolean
+        description: "当前是否为第一页"
+      numberOfElements:
+        type: integer
+        description: "当前页的条数"
+  code:
+    type: integer
+    description: "对当前操作的状态码"
+parameters:
+  page:
+    in: query
+    name: "page"
+    required: true
+    type: integer
+    description: "页数,由0开始"
+    minimum: 0
+  size:
+    in: query
+    name: "size"
+    required: false
+    type: integer
+    description: "每页获取的最大条数,必须大于1"
+    minimum: 1
+  imageId:
+    in: path
+    name: "imageId"
+    required: true
+    type: string
+    description: "由镜像列表返回的id字段"
+  tag:
+    in: path
+    name: "tag"
+    description: "版本"
+    required: true
+    type: string
+  configId:
+    in: path
+    name: "configId"
+    description: "配置文件列表返回的id"
+    required: true
+    type: string
+responses:
+  200Response:
+    description: "请求成功"
+    schema:
+      $ref: '#/definitions/SameResponse'
+  404Response:
+    description: "请求的资源不存在"
+    schema:
+      $ref: '#/definitions/SameResponse'
+  400Response:
+    description: "请求含有错误,一般为参数错误会使用这个状态"
+    schema:
+      $ref: '#/definitions/SameResponse'
+  403Response:
+    description: "这个操作在服务器端遭到拒绝,客户端无法进行这个请求"
+    schema:
+      $ref: '#/definitions/SameResponse'
+  300Response:
+    description: "需要进一步操作来完成刚才的请求"
+    schema:
+      $ref: '#/definitions/SameResponse'

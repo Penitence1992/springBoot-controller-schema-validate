@@ -109,10 +109,6 @@ public class LaunchTest extends MockMvcResultMatchers {
 
     @Test
     public void testDoValidateController6File() throws Exception {
-//        RequestBuilder builder = MockMvcRequestBuilders.post("/validator/api6")
-//                .contentType(MediaType.MULTIPART_FORM_DATA)
-//                .
-
         RequestBuilder builder = MockMvcRequestBuilders.fileUpload("/validator/api6")
                 .file(new MockMultipartFile("username", new FileInputStream("/Users/penitence/setSkyNode/13_BK.jpg")));
         String result = mockMvc.perform(builder).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();

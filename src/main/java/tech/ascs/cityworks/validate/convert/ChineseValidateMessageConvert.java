@@ -17,6 +17,8 @@ public class ChineseValidateMessageConvert implements ValidateMessageConvert {
         validationMessages.forEach(validationMessage -> {
             if ("required".equals(validationMessage.getType())) {
                 message.add(argsConcat(getArgs(validationMessage)) + "参数必须");
+            }else {
+                message.add(validationMessage.toString());
             }
         });
 
