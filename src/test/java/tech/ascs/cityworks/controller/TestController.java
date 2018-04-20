@@ -1,26 +1,13 @@
-package tech.ascs.cityworks;
+package tech.ascs.cityworks.controller;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import tech.ascs.cityworks.validate.base.EnableSchemaValidation;
+import tech.ascs.cityworks.TestBean;
 
 import java.util.Objects;
 
-/**
- * Created by RenJie on 2017/6/29 0029.
- */
-@SpringBootApplication
 @RestController
-@EnableSchemaValidation
-public class Launch {
-
-    public static void main(String[] args){
-
-        SpringApplication.run(Launch.class,args);
-    }
-
+public class TestController {
 
     @RequestMapping({"/validator/api1","/validator/api3"})
     public String validateController1(String username, String password){

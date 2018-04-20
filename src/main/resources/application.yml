@@ -1,0 +1,5 @@
+schema:
+  path: classpath:/schema
+  base_package: tech.ascs.cityworks
+  annotations:
+    - "org.springframework.web.bind.annotation.GetMapping"

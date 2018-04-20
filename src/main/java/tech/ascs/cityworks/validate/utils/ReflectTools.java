@@ -4,6 +4,7 @@ import com.esotericsoftware.reflectasm.MethodAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Stream;
@@ -168,5 +169,14 @@ public class ReflectTools {
         }else{
             throw new NoSuchMethodException("This isn't a base bean , must start with [get, set, is]");
         }
+    }
+
+
+    public static Set<Class<?>> findClassFromString(Collection<String> clazzName) throws ClassNotFoundException {
+        Set<Class<?>> result = new HashSet<>();
+        for (String clzzStr : clazzName){
+            result.add(Class.forName(clzzStr));
+        }
+        return result;
     }
 }

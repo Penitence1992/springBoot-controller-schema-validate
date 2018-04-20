@@ -1,6 +1,8 @@
 package tech.ascs.cityworks.validate;
 
 import com.networknt.schema.ValidationMessage;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -8,6 +10,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.aop.aspectj.MethodInvocationProceedingJoinPoint;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import tech.ascs.cityworks.validate.base.RequestValidate;
 import tech.ascs.cityworks.validate.base.ValidateMessageConvert;
 import tech.ascs.cityworks.validate.exception.ValidateFailException;
 import tech.ascs.cityworks.validate.utils.StringUtils;
@@ -28,34 +31,25 @@ import java.util.Set;
  *     <li>{@link org.springframework.web.bind.annotation.DeleteMapping}</li>
  * </ul>
  */
-@Aspect
-public class ValidateInterceptor  {
+//@Aspect
+public class ValidateInterceptor  implements MethodInterceptor{
 
-    private final ValidateComponent validateComponent;
+    private final RequestValidate validateComponent;
     private final ValidateMessageConvert convert;
-    public ValidateInterceptor(ValidateComponent validateComponent, ValidateMessageConvert convert){
+    public ValidateInterceptor(RequestValidate validateComponent, ValidateMessageConvert convert){
         this.validateComponent = validateComponent;
         this.convert = convert;
     }
 
-    @Around(value = "@annotation(org.springframework.web.bind.annotation.RequestMapping) ||" +
-            "@annotation(org.springframework.web.bind.annotation.GetMapping) || " +
-            "@annotation(org.springframework.web.bind.annotation.PostMapping) ||" +
-            "@annotation(org.springframework.web.bind.annotation.PutMapping) ||" +
-            "@annotation(org.springframework.web.bind.annotation.PatchMapping) ||" +
-            "@annotation(org.springframework.web.bind.annotation.DeleteMapping)",argNames = "proceedingJoinPoint")
-    public Object aroundAOP(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
-
-        if(proceedingJoinPoint instanceof MethodInvocationProceedingJoinPoint) {
-            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            MethodInvocationProceedingJoinPoint joinPoint = (MethodInvocationProceedingJoinPoint) proceedingJoinPoint;
-            Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
-            Set<ValidationMessage> result = validateComponent.validate(request,method,proceedingJoinPoint.getArgs());
-            if(result.size() > 0){
-                throw new ValidateFailException(StringUtils.joinString(convert.convert(result), ","));
-            }
+    @Override
+    public Object invoke(MethodInvocation invocation) throws Throwable {
+        System.out.println(invocation.getMethod());
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        Method method = invocation.getMethod();
+        Set<ValidationMessage> result = validateComponent.validate(request,method, invocation.getArguments());
+        if(result.size() > 0){
+            throw new ValidateFailException(StringUtils.joinString(convert.convert(result), ","));
         }
-        return proceedingJoinPoint.proceed();
+        return invocation.proceed();
     }
-
 }

@@ -10,3 +10,4 @@ _book
 .project
 .settings
 out
+.DS_Store

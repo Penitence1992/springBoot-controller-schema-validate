@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "username": {
-      "type": "file"
+      "type": "string"
     }
   },
   "required":["username"]

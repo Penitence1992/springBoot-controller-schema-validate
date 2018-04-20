@@ -14,20 +14,18 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import tech.ascs.cityworks.Launch;
+import tech.ascs.cityworks.JsonSchemaLaunch;
 
 import javax.annotation.PostConstruct;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * Created by RenJie on 2017/6/29 0029.
  * 测试类
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = Launch.class)
-public class LaunchTest extends MockMvcResultMatchers {
+@SpringBootTest(classes = JsonSchemaLaunch.class)
+public class JsonSchemaLaunchTest extends MockMvcResultMatchers {
 
     private MockMvc mockMvc;
 

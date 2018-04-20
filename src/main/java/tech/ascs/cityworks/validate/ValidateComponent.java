@@ -14,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tech.ascs.cityworks.validate.base.RequestHandlerValidate;
 import tech.ascs.cityworks.validate.base.RequestQueryBean;
+import tech.ascs.cityworks.validate.base.RequestValidate;
+import tech.ascs.cityworks.validate.config.SchemaValidateProperties;
 import tech.ascs.cityworks.validate.exception.ValidateInitNotSchemaException;
 import tech.ascs.cityworks.validate.handler.factory.RequestHandlerMapBeanFactory;
 import tech.ascs.cityworks.validate.utils.ReflectTools;
@@ -29,7 +31,7 @@ import java.util.stream.Stream;
  * Created by RenJie on 2017/6/26 0026.
  * schema校验组件用于初始化,以及对请求进行校验
  */
-public class ValidateComponent {
+public class ValidateComponent implements RequestValidate {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -37,18 +39,17 @@ public class ValidateComponent {
 
     private final ObjectMapper mapper;
 
-    public ValidateComponent(String basePackage,
-                             String schemaBasePath,
+    public ValidateComponent(SchemaValidateProperties properties,
                              ObjectMapper mapper,
                              ApplicationContext applicationContext) {
-        logger.info("Init tech.ascs.cityworks.validate info by base package : {}", basePackage);
+        logger.info("Init tech.ascs.cityworks.validate info by base package : {}", properties.getBasePackage());
         this.mapper = mapper;
 
         RequestMappingHandlerMapping mapping = applicationContext.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
         mapping.getHandlerMethods().forEach((requestMappingInfo, handlerMethod) -> {
-            if (StringUtils.isEmpty(basePackage) || handlerMethod.getShortLogMessage().contains(basePackage)) {
+            if (StringUtils.isEmpty(properties.getBasePackage()) || handlerMethod.getShortLogMessage().contains(properties.getBasePackage())) {
                 try {
-                    cacheMapping.put(handlerMethod.getMethod(), RequestHandlerMapBeanFactory.newInstance(handlerMethod, requestMappingInfo, schemaBasePath));
+                    cacheMapping.put(handlerMethod.getMethod(), RequestHandlerMapBeanFactory.newInstance(handlerMethod, requestMappingInfo, properties.getPath()));
                 } catch (ValidateInitNotSchemaException exception) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Init schema error : {}", exception.getMessage());
