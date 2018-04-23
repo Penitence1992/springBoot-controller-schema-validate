@@ -39,17 +39,19 @@ public class ValidateComponent implements RequestValidate {
 
     private final ObjectMapper mapper;
 
+    private final boolean FLAT_MODE;
+
     public ValidateComponent(SchemaValidateProperties properties,
                              ObjectMapper mapper,
                              ApplicationContext applicationContext) {
         logger.info("Init tech.ascs.cityworks.validate info by base package : {}", properties.getBasePackage());
         this.mapper = mapper;
-
+        this.FLAT_MODE = properties.isFlatMode();
         RequestMappingHandlerMapping mapping = applicationContext.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
         mapping.getHandlerMethods().forEach((requestMappingInfo, handlerMethod) -> {
             if (StringUtils.isEmpty(properties.getBasePackage()) || handlerMethod.getShortLogMessage().contains(properties.getBasePackage())) {
                 try {
-                    cacheMapping.put(handlerMethod.getMethod(), RequestHandlerMapBeanFactory.newInstance(handlerMethod, requestMappingInfo, properties.getPath()));
+                    cacheMapping.put(handlerMethod.getMethod(), RequestHandlerMapBeanFactory.newInstance(handlerMethod, requestMappingInfo, properties));
                 } catch (ValidateInitNotSchemaException exception) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Init schema error : {}", exception.getMessage());
@@ -78,14 +80,9 @@ public class ValidateComponent implements RequestValidate {
         return validateResult;
     }
 
-    private Object tryParseStringToMap(String json) {
-        Object returnData;
-        try {
+    private Map tryParseStringToMap(String json) throws IOException {
+        Map returnData;
             returnData = mapper.readValue(json, Map.class);
-        } catch (IOException e) {
-            logger.warn("Try parse json string faild");
-            returnData = json;
-        }
         return returnData;
     }
 
@@ -118,12 +115,17 @@ public class ValidateComponent implements RequestValidate {
                     Object data = args[methodParameter.getParameterIndex()];
                     if (data == null) return;
                     if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
-                        map.put(methodParameter.getParameterName(), parseRequestBody(data));
+                        if (FLAT_MODE){
+                            map.putAll(parseRequestBody(data));
+                        }else{
+                            map.put(methodParameter.getParameterName(), selectMapOrString(data));
+                        }
                     } else {
                         map.putAll(parseRequestParam(methodParameter, data));
                     }
                 }
         );
+
         return map;
     }
 
@@ -145,10 +147,23 @@ public class ValidateComponent implements RequestValidate {
         return returnData;
     }
 
-    private Object parseRequestBody(Object data) {
-        Object returnData;
+    private Object selectMapOrString(Object data){
+        Map rtv = parseRequestBody(data);
+        if( rtv == null ){
+            return data.toString();
+        }
+        return rtv;
+    }
+
+    private Map parseRequestBody(Object data) {
+        Map returnData;
         if (data instanceof String) {
-            returnData = tryParseStringToMap(data.toString());
+            try {
+                returnData = tryParseStringToMap(data.toString());
+            } catch (IOException e) {
+                logger.info("this is not json data");
+                return null;
+            }
         } else {
             Set<Map.Entry> entries = mapper.convertValue(data, Map.class).entrySet();
             returnData = entries.stream()

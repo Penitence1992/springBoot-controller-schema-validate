@@ -43,7 +43,6 @@ public class ValidateInterceptor  implements MethodInterceptor{
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
-        System.out.println(invocation.getMethod());
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         Method method = invocation.getMethod();
         Set<ValidationMessage> result = validateComponent.validate(request,method, invocation.getArguments());

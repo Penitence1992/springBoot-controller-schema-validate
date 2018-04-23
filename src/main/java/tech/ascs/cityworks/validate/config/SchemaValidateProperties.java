@@ -16,6 +16,8 @@ public class SchemaValidateProperties {
 
     private String basePackage = "tech.ascs.cityworks";
 
+    private boolean flatMode = false;
+
     private List<String> annotations = Arrays.asList(
             "org.springframework.web.bind.annotation.GetMapping",
             "org.springframework.web.bind.annotation.DeleteMapping",
