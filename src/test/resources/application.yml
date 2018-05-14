@@ -1,7 +1,7 @@
 logging.level.root: info
 
 schema:
-  path: classpath:/schema/
+  path: classpath:/swagger/1.0.0.yml
   base_package: tech.ascs.cityworks.controller
   annotations: "org.springframework.web.bind.annotation.GetMapping,
                 org.springframework.web.bind.annotation.DeleteMapping,

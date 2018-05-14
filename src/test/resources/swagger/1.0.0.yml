@@ -10,6 +10,8 @@ tags:
   description: "镜像管理相关接口列表"
 - name: "containers"
   description: "容器实例管理接口列表"
+- name: "node"
+  description: "swarmNode集群节点列表"
 schemes:
 - "http"
 paths:
@@ -290,6 +292,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ContainersConfigPageResponse'
+
   /containers/configs/{configId}:
     delete:
       tags:
@@ -329,7 +332,87 @@ paths:
           $ref: '#/responses/200Response'
         403:
           $ref: '#/responses/403Response'
-
+  /containers/configs/{configId}/container/scale:
+    put:
+      tags:
+      - containers
+      operationId: "changeServiceScale"
+      summary: "修改服务的实例数"
+      description: "如果服务已经启动,可以通过这个操作来修改服务的实例数量"
+      parameters:
+      - in: path
+        name: "configId"
+        description: "配置的id"
+        required: true
+        type: string
+      - in: body
+        name: "scale"
+        required: true
+        schema:
+          type: object
+          description: "修改实例传的对象"
+          properties:
+            scale:
+              type: integer
+              minimum: 0
+              description: "实例的个数,最少为0个"
+      responses:
+        200:
+          description: "修改成功"
+        403:
+          description: "服务未启动,无法修改"
+        404:
+          description: "服务不存在"
+  /containers:
+    get:
+      tags:
+      - containers
+      operationId: "getContainersTasks"
+      summary: "获取容器实例列表"
+      description: "获取容器实例的完整列表,包含名称,状态,节点,service名称,等基本信息"
+      parameters:
+      - in: query
+        name: "state"
+        description: "实例的状态running表示运行中"
+        required: false
+        type: string
+      - in: query
+        name: "name"
+        description: "容器的名称"
+        required: false
+        type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/TasksListResposne'
+  /nodes:
+    get:
+      tags:
+      - node
+      summary: "集群节点列表"
+      description:  "获取集群节点列表"
+      parameters:
+      - in: query
+        name: "swarmId"
+        description: "所属的集群的id"
+        required: false
+        type: string
+      - in: query
+        name: "hostname"
+        description: "hostname搜索条件"
+        required: false
+        type: string
+      - in: query
+        name: "role"
+        description: "节点角色"
+        required: false
+        type: string
+      responses:
+        200:
+          description: "返回数据内容"
+          schema:
+            $ref: '#/definitions/NodeListResponse'
 definitions:
   SameResponse:
     type: object
@@ -553,11 +636,63 @@ definitions:
   code:
     type: integer
     description: "对当前操作的状态码"
+  TasksListResposne:
+    type: array
+    description: "容器实例的返回内容"
+    items:
+      type: object
+      properties:
+        containerName:
+          type: string
+          description: "容器实例的名称"
+        containerImage:
+          type: string
+          description: "镜像名称"
+        containerId:
+          type: string
+          description: "容器id"
+        nodeId:
+          type: string
+          description: "节点id"
+        serviceName:
+          type: string
+          description: "服务的名称"
+        status:
+          type: string
+          description: "容器的状态"
+        swarmId:
+          type: string
+          description: "集群的id"
+        updated:
+          type: string
+          description: "更新时间"
+  NodeListResponse:
+    type: array
+    description: "节点列表返回的内容"
+    items:
+      type: object
+      properties:
+        nodeId:
+          description: "nodeId对应数据库中的swarmNodeId字段"
+          type: string
+        role:
+          description: "角色"
+          type: string
+        memory:
+          description: "内存"
+          type: string
+        ip:
+          description: "node的ip地址"
+          type: string
+        hostname:
+          description: "hostname"
+          type: string
+
 parameters:
   page:
     in: query
     name: "page"
-    required: true
+    required: false
     type: integer
     description: "页数,由0开始"
     minimum: 0

@@ -106,13 +106,11 @@ public class ConvertYmlToSchema {
         }
         //处理参数中的required字段,放入到required中,作为必须参数的校验
         properties.forEach((name, property) -> {
-            System.out.println(name);
             Map p = (Map) property;
             if(p.containsKey("required") && Boolean.valueOf(p.get("required").toString())){
                 ((Set)fillMap.get("required")).add(Optional.ofNullable(p.get("_requiredName")).orElse(name).toString());
             } else if (p.containsKey("$this") && Boolean.valueOf(p.get("$this").toString())){
                 ((Set)fillMap.get("required")).add(name);
-
             }
         });
         return fillMap;
@@ -139,17 +137,18 @@ public class ConvertYmlToSchema {
             property.put(param.get("name"), content);
         } else if ("body".equals(in)){
             Map schema = (Map) param.get("schema");
-            if(schema.containsKey("$ref")){
+            Map refMap = schema;
+            if(refMap.containsKey("$ref")){
                 // 解析#/开头的ref
-                Map refMap = parseRef(schema.get("$ref").toString(), data);
+                refMap = parseRef(schema.get("$ref").toString(), data);
                 // key $this放入一个布尔值,表示这个body是否必须
                 refMap.put("$this", Optional.ofNullable(param.get("required")).orElse("false").toString());
-                //是否使用flat模式进行处理
-                if(flatMode){
-                    property.putAll(refMap);
-                }else{
-                    property.put(param.get("name"), refMap);
-                }
+            }
+            //是否使用flat模式进行处理
+            if(flatMode){
+                property.putAll(refMap);
+            }else{
+                property.put(param.get("name"), refMap);
             }
             innerFlatMode = flatMode;
         }
