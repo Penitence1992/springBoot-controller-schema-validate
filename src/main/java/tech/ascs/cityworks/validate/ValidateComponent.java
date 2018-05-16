@@ -82,7 +82,7 @@ public class ValidateComponent implements RequestValidate {
 
     private Map tryParseStringToMap(String json) throws IOException {
         Map returnData;
-            returnData = mapper.readValue(json, Map.class);
+        returnData = mapper.readValue(json, Map.class);
         return returnData;
     }
 
@@ -115,9 +115,9 @@ public class ValidateComponent implements RequestValidate {
                     Object data = args[methodParameter.getParameterIndex()];
                     if (data == null) return;
                     if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
-                        if (FLAT_MODE){
+                        if (FLAT_MODE) {
                             map.putAll(parseRequestBody(data));
-                        }else{
+                        } else {
                             map.put(methodParameter.getParameterName(), selectMapOrString(data));
                         }
                     } else {
@@ -132,24 +132,20 @@ public class ValidateComponent implements RequestValidate {
     private Map<String, Object> parseRequestParam(MethodParameter methodParameter, Object data) {
         Class parameterType = methodParameter.getParameterType();
         Map<String, Object> returnData = new HashMap<>();
-        if (parameterType.getAnnotation(RequestQueryBean.class) != null) {
-            returnData.putAll(parseObjectToMap(data));
-        } else if (parameterType.isAssignableFrom(Map.class)) {
-            returnData.putAll((Map<String, Object>) data);
-        } else if (parameterType.isAssignableFrom(MultipartFile.class)){
+        if (parameterType.isAssignableFrom(MultipartFile.class)) {
             MultipartFile file = (MultipartFile) data;
-            if(Objects.nonNull(file) && !file.isEmpty()){
+            if (Objects.nonNull(file) && !file.isEmpty()) {
                 returnData.put(methodParameter.getParameterName(), file.getOriginalFilename());
             }
         } else {
-            returnData.put(methodParameter.getParameterName(), data);
+            returnData.putAll(parseObjectToMap(methodParameter.getParameterName(), data));
         }
         return returnData;
     }
 
-    private Object selectMapOrString(Object data){
+    private Object selectMapOrString(Object data) {
         Map rtv = parseRequestBody(data);
-        if( rtv == null ){
+        if (rtv == null) {
             return data.toString();
         }
         return rtv;
@@ -173,17 +169,14 @@ public class ValidateComponent implements RequestValidate {
         return returnData;
     }
 
-    private Map<String, Object> parseObjectToMap(Object data) {
-        Map<String, Object> result = new HashMap<>();
-        Stream.of(data.getClass().getDeclaredMethods())
-                .map(Method::getName)
-                .filter(name -> name.startsWith("is") || name.startsWith("get"))
-                .forEach(name -> Optional.ofNullable(ReflectTools.invokeMethod(data, name)).ifPresent(obj -> {
-                    try {
-                        result.put(ReflectTools.parseMethodNameToFiledName(name), obj);
-                    } catch (NoSuchMethodException ignored) {
-                    }
-                }));
-        return result;
+    private Map<String, Object> parseObjectToMap(String parameterName, Object data) {
+        try {
+            return mapper.convertValue(data, HashMap.class);
+        } catch (Exception e) {
+            Map<String, Object> result = new HashMap<>();
+            result.put(parameterName, data);
+            return result;
+        }
+
     }
 }
