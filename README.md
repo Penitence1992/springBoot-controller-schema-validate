@@ -1,6 +1,8 @@
 ## Controller schema validate 
 
 ### 简介
+
+目前只支持SpringBoot 1.5.x的版本
   
   用于对使用SpringMvc开发的Web后端应用的接入口进行校验,对有以下注解的入口方法进行校验
   
@@ -44,7 +46,7 @@ public class Launch {
 
 ```gradle
 
-compile('tech.ascs.cityworks:controller-schema-validator:1.0.1')
+compile('tech.ascs.cityworks:controller-schema-validator:2.1.8')
 
 ```
 
@@ -55,7 +57,7 @@ compile('tech.ascs.cityworks:controller-schema-validator:1.0.1')
 <dependency>
     <groupId>tech.ascs.cityworks</groupId>
     <artifactId>controller-schema-validator</artifactId>
-    <version>1.0.1</version>
+    <version>2.1.8</version>
 </dependency>
 
 ```

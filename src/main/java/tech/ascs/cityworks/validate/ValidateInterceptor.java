@@ -17,6 +17,7 @@ import tech.ascs.cityworks.validate.utils.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -43,11 +44,16 @@ public class ValidateInterceptor  implements MethodInterceptor{
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        Method method = invocation.getMethod();
-        Set<ValidationMessage> result = validateComponent.validate(request,method, invocation.getArguments());
-        if(result.size() > 0){
-            throw new ValidateFailException(StringUtils.joinString(convert.convert(result), ","));
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (Objects.nonNull(attributes)){
+            HttpServletRequest request = attributes.getRequest();
+            if (Objects.nonNull(request)){
+                Method method = invocation.getMethod();
+                Set<ValidationMessage> result = validateComponent.validate(request,method, invocation.getArguments());
+                if(result.size() > 0){
+                    throw new ValidateFailException(StringUtils.joinString(convert.convert(result), ","));
+                }
+            }
         }
         return invocation.proceed();
     }

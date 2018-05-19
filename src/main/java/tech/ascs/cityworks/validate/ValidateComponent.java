@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.MethodParameter;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,7 +21,10 @@ import tech.ascs.cityworks.validate.exception.ValidateInitNotSchemaException;
 import tech.ascs.cityworks.validate.handler.factory.RequestHandlerMapBeanFactory;
 import tech.ascs.cityworks.validate.utils.ReflectTools;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -114,12 +118,15 @@ public class ValidateComponent implements RequestValidate {
         Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter -> {
                     Object data = args[methodParameter.getParameterIndex()];
                     if (data == null) return;
+                    if (ignore(data)) return;
                     if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
                         if (FLAT_MODE) {
                             map.putAll(parseRequestBody(data));
                         } else {
                             map.put(methodParameter.getParameterName(), selectMapOrString(data));
                         }
+                    } else if (methodParameter.getParameterAnnotation(PathVariable.class) != null) {
+                        map.put(findPathVariableName(methodParameter), data);
                     } else {
                         map.putAll(parseRequestParam(methodParameter, data));
                     }
@@ -169,14 +176,35 @@ public class ValidateComponent implements RequestValidate {
         return returnData;
     }
 
-    private Map<String, Object> parseObjectToMap(String parameterName, Object data) {
+    private Map parseObjectToMap(String parameterName, Object data) {
         try {
-            return mapper.convertValue(data, HashMap.class);
+            Set<Map.Entry> entries = mapper.convertValue(data, HashMap.class).entrySet();
+            return entries.parallelStream().filter(entry -> Objects.nonNull(entry.getValue()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         } catch (Exception e) {
             Map<String, Object> result = new HashMap<>();
             result.put(parameterName, data);
             return result;
         }
 
+    }
+
+    private boolean ignore(Object data) {
+        return ServletRequest.class.isAssignableFrom(data.getClass()) ||
+                ServletResponse.class.isAssignableFrom(data.getClass()) ||
+                HttpSession.class.isAssignableFrom(data.getClass());
+    }
+
+    private String findPathVariableName(MethodParameter parameter){
+        return Optional.ofNullable(parameter.getParameterName())
+                    .orElse(findPathVariableAnnName(parameter.getParameterAnnotation(PathVariable.class)));
+    }
+
+    private String findPathVariableAnnName(PathVariable pathVariable){
+        if(StringUtils.isEmpty(pathVariable.name())){
+            return pathVariable.value();
+        }else {
+            return pathVariable.name();
+        }
     }
 }
