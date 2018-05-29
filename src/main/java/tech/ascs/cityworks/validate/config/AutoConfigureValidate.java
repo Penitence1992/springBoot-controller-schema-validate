@@ -17,6 +17,7 @@ import tech.ascs.cityworks.validate.base.ValidateMessageConvert;
 import tech.ascs.cityworks.validate.convert.ChineseValidateMessageConvert;
 import tech.ascs.cityworks.validate.utils.ReflectTools;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -57,7 +58,7 @@ public class AutoConfigureValidate {
 
     @Bean
     public DefaultBeanFactoryPointcutAdvisor validateAdvisor(SchemaValidateProperties properties) throws ClassNotFoundException {
-        Set<Class<?>> methodAnnotation = findClassesFromNames(properties.getAnnotations());
+        Set<Class<?>> methodAnnotation = findClassesFromNames(Arrays.asList(properties.getAnnotations()));
         ContainsMatchingPointcut pointcut = new ContainsMatchingPointcut(properties.getBasePackage(), methodAnnotation);
         DefaultBeanFactoryPointcutAdvisor advisor = new DefaultBeanFactoryPointcutAdvisor();
         advisor.setPointcut(pointcut);

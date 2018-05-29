@@ -38,7 +38,6 @@ repositories {
 
 dependencies {
 
-    compile group: 'org.projectlombok', name: 'lombok', version: '1.16.20'
     compile('com.esotericsoftware:reflectasm:1.11.3')
     compile('com.google.guava:guava')
     compile('com.networknt:json-schema-validator:0.1.7')
@@ -46,6 +45,8 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.cloud:spring-cloud-commons')
 
+    compileOnly("org.springframework.boot:spring-boot-configuration-processor")
+    compileOnly('org.projectlombok:lombok')
 
     testCompile('commons-io:commons-io:2.4')
     testCompile group: 'commons-logging', name: 'commons-logging', version: '1.1.1'
