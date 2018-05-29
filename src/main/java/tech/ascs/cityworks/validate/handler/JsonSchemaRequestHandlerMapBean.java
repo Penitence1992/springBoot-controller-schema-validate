@@ -5,7 +5,8 @@ import com.google.common.collect.Sets;
 import com.networknt.schema.ValidationMessage;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.reactive.result.method.RequestMappingInfo;
+import org.springframework.web.util.pattern.PathPattern;
 import tech.ascs.cityworks.validate.base.SchemaValidateComponent;
 import tech.ascs.cityworks.validate.exception.ValidateInitNotSchemaException;
 
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by RenJie on 2017/6/27 0027.
@@ -73,7 +75,11 @@ public class JsonSchemaRequestHandlerMapBean extends AbstractRequestHandlerMapBe
      * @throws ValidateInitNotSchemaException 当Map的大小为0的时候抛出此异常
      */
     private void initSchemaValidate() throws ValidateInitNotSchemaException {
-        Set<String> urls = requestMappingInfo.getPatternsCondition().getPatterns(); //(1) 获取所有请求
+
+//        Set<String> urls = requestMappingInfo.getPatternsCondition().getPatterns(); //(1) 获取所有请求
+        Set<String> urls = requestMappingInfo.getPatternsCondition().getPatterns()
+                .parallelStream()
+                .map(PathPattern::getPatternString).collect(Collectors.toSet()); //(1) 获取所有请求
         Set<RequestMethod> methods = requestMappingInfo.getMethodsCondition().getMethods(); //(2)获取所有请求方法
         if (methods.size() == 0) {
             methods = DEFAULT_METHOD;

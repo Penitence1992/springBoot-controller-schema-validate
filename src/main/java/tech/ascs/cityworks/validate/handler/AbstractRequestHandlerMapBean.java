@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public abstract class AbstractRequestHandlerMapBean implements RequestHandlerValidate{
+public abstract class AbstractRequestHandlerMapBean implements RequestHandlerValidate {
 
     protected final Logger logger;
     protected final boolean isDebugEnable;

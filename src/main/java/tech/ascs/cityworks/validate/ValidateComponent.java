@@ -12,19 +12,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.util.pattern.PathPattern;
 import tech.ascs.cityworks.validate.base.RequestHandlerValidate;
-import tech.ascs.cityworks.validate.base.RequestQueryBean;
 import tech.ascs.cityworks.validate.base.RequestValidate;
 import tech.ascs.cityworks.validate.config.SchemaValidateProperties;
 import tech.ascs.cityworks.validate.exception.ValidateInitNotSchemaException;
 import tech.ascs.cityworks.validate.handler.factory.RequestHandlerMapBeanFactory;
-import tech.ascs.cityworks.validate.utils.ReflectTools;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -66,12 +62,12 @@ public class ValidateComponent implements RequestValidate {
         logger.info("Cache mapping has key size : {}", cacheMapping.keySet().size());
     }
 
-    public Set<ValidationMessage> validate(HttpServletRequest request, Method method, Object[] args) {
+    public Set<ValidationMessage> validate(ServerWebExchange exchange, Method method, Object[] args) {
         Set<ValidationMessage> validateResult = new HashSet<>();
         Optional.ofNullable(cacheMapping.get(method))
                 .ifPresent(bean -> {
-                    String url = getRequestSourceUrl(bean, request);
-                    RequestMethod requestMethod = RequestMethod.valueOf(request.getMethod());
+                    String url = getRequestSourceUrl(bean, exchange);
+                    RequestMethod requestMethod = RequestMethod.valueOf(exchange.getRequest().getMethodValue());
                     if (!StringUtils.isEmpty(url) &&
                             bean.checkHasValidateComponent(requestMethod, url)) {
                         Map<String, Object> map = buildValidateMap(bean, args);
@@ -90,8 +86,11 @@ public class ValidateComponent implements RequestValidate {
         return returnData;
     }
 
-    private String getRequestSourceUrl(RequestHandlerValidate bean, HttpServletRequest request) {
-        Set<String> urls = bean.getRequestMappingInfo().getPatternsCondition().getMatchingCondition(request).getPatterns();
+    private String getRequestSourceUrl(RequestHandlerValidate bean, ServerWebExchange exchange) {
+        Set<String> urls = bean.getRequestMappingInfo().getPatternsCondition().getMatchingCondition(exchange).getPatterns()
+                .parallelStream()
+                .map(PathPattern::getPatternString)
+                .collect(Collectors.toSet());
         logger.debug("Found matching url count : {}", urls.size());
         if (urls.size() > 1) {
             logger.warn("Found greater than 1 count url, get the first one");
@@ -190,13 +189,11 @@ public class ValidateComponent implements RequestValidate {
     }
 
     private boolean ignore(Object data) {
-        return ServletRequest.class.isAssignableFrom(data.getClass()) ||
-                ServletResponse.class.isAssignableFrom(data.getClass()) ||
-                HttpSession.class.isAssignableFrom(data.getClass());
+        return ServerWebExchange.class.isAssignableFrom(data.getClass());
     }
 
     private String findPathVariableName(MethodParameter parameter){
-        return Optional.ofNullable(parameter.getParameterName())
+        return Optional.of(parameter.getParameterName())
                     .orElse(findPathVariableAnnName(parameter.getParameterAnnotation(PathVariable.class)));
     }
 

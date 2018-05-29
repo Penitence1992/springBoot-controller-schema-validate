@@ -1,7 +1,6 @@
 package tech.ascs.cityworks.validate.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.aopalliance.intercept.MethodInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.DefaultBeanFactoryPointcutAdvisor;
@@ -13,9 +12,9 @@ import tech.ascs.cityworks.validate.ValidateComponent;
 import tech.ascs.cityworks.validate.ValidateInterceptor;
 import tech.ascs.cityworks.validate.aspectj.ContainsMatchingPointcut;
 import tech.ascs.cityworks.validate.base.RequestValidate;
+import tech.ascs.cityworks.validate.base.ValidateHttpMethodInterceptor;
 import tech.ascs.cityworks.validate.base.ValidateMessageConvert;
 import tech.ascs.cityworks.validate.convert.ChineseValidateMessageConvert;
-import tech.ascs.cityworks.validate.utils.ReflectTools;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -47,6 +46,7 @@ public class AutoConfigureValidate {
                                              SchemaValidateProperties properties){
         logger.info("No found bean {}, using default bean validateComponent",ValidateComponent.class.getName());
         return new ValidateComponent(properties,mapper,applicationContext);
+//        return new ValidateComponent();
     }
 
     @Bean
@@ -66,8 +66,8 @@ public class AutoConfigureValidate {
     }
     @Bean
     @ConditionalOnMissingBean(name = "validateInterceptor")
-    public MethodInterceptor validateInterceptor(RequestValidate validateComponent,
-                                                 ValidateMessageConvert convert){
+    public ValidateHttpMethodInterceptor validateInterceptor(RequestValidate validateComponent,
+                                                             ValidateMessageConvert convert){
         logger.info("No found bean {}, using default bean validateInterceptor",ValidateInterceptor.class.getName());
         return new ValidateInterceptor(validateComponent, convert);
     }

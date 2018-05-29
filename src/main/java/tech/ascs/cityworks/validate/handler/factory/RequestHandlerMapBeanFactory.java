@@ -1,10 +1,9 @@
 package tech.ascs.cityworks.validate.handler.factory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.reactive.result.method.RequestMappingInfo;
 import tech.ascs.cityworks.validate.base.RequestHandlerValidate;
 import tech.ascs.cityworks.validate.config.SchemaValidateProperties;
 import tech.ascs.cityworks.validate.convert.ConvertYmlToSchema;
@@ -25,7 +24,6 @@ public class RequestHandlerMapBeanFactory {
     private final static Map<String,Object> cacheMap = new HashMap<>();
 
     /**
-     * 获取一个{@link tech.ascs.cityworks.validate.base.RequestHandlerValidate}的实例，根据传入的schemaBasePath去区分是swagger文件还是schema文件，已yml结尾的为swagger文件模式
      * @param method 控制器的方法
      * @param requestMappingInfo 关联的路径映射信息
      * @param properties schema校验器的配置属性

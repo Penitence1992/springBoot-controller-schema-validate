@@ -1,5 +1,6 @@
 package tech.ascs.cityworks.validate.base;
 
+import org.springframework.context.annotation.AdviceMode;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import tech.ascs.cityworks.validate.config.AutoConfigureValidateSelector;
@@ -16,4 +17,5 @@ import java.lang.annotation.*;
 @EnableAspectJAutoProxy
 public @interface EnableSchemaValidation {
 
+    AdviceMode mode() default AdviceMode.ASPECTJ;
 }
