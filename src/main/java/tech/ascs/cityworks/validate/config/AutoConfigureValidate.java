@@ -15,7 +15,6 @@ import tech.ascs.cityworks.validate.aspectj.ContainsMatchingPointcut;
 import tech.ascs.cityworks.validate.base.RequestValidate;
 import tech.ascs.cityworks.validate.base.ValidateMessageConvert;
 import tech.ascs.cityworks.validate.convert.ChineseValidateMessageConvert;
-import tech.ascs.cityworks.validate.utils.ReflectTools;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,8 +31,6 @@ public class AutoConfigureValidate {
 
     private final boolean IS_DEBUG_ENABLE = logger.isDebugEnabled();
 
-//    @Autowired
-//    private SchemaValidateProperties properties;
 
     @Bean
     @ConfigurationProperties("schema")

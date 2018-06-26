@@ -1,6 +1,5 @@
 package tech.ascs.cityworks.validate.handler.factory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.method.HandlerMethod;

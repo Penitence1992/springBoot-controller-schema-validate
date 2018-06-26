@@ -8,17 +8,18 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import tech.ascs.cityworks.validate.base.SchemaValidateComponent;
 import tech.ascs.cityworks.validate.exception.ValidateInitNotSchemaException;
+import tech.ascs.cityworks.validate.utils.MappingUrlUtils;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SwaggerRequestHandlerMapBean extends AbstractRequestHandlerMapBean {
 
     private final static Set<RequestMethod> DEFAULT_METHOD = Sets.newHashSet(RequestMethod.values());
 
-    private Map<String, SchemaValidateComponent> validateMap = new HashMap<>();
+    private Map<String, SchemaValidateComponent> validateMap = new ConcurrentHashMap<>();
 
     private final Map<String,Map> schemaMap;
     private final HandlerMethod method;
@@ -46,7 +47,7 @@ public class SwaggerRequestHandlerMapBean extends AbstractRequestHandlerMapBean 
             methods = DEFAULT_METHOD;
         }
         //(3) 建立多对多映射,构建Map的Key和Schema路径
-        methods.forEach(requestMethod -> urls.forEach(url -> {
+        methods.forEach(requestMethod -> urls.parallelStream().map(MappingUrlUtils::pathVariableConvert).forEach(url -> {
 //            String pathUrl = url.replaceAll(REGEX_PATH_PARAM,"_");
             String schemaPath = url + "_" + requestMethod.name().toLowerCase();
             if(!schemaMap.containsKey(schemaPath)){

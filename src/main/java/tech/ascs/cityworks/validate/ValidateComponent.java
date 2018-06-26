@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.MethodParameter;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,12 +15,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tech.ascs.cityworks.validate.base.RequestHandlerValidate;
-import tech.ascs.cityworks.validate.base.RequestQueryBean;
 import tech.ascs.cityworks.validate.base.RequestValidate;
 import tech.ascs.cityworks.validate.config.SchemaValidateProperties;
 import tech.ascs.cityworks.validate.exception.ValidateInitNotSchemaException;
 import tech.ascs.cityworks.validate.handler.factory.RequestHandlerMapBeanFactory;
-import tech.ascs.cityworks.validate.utils.ReflectTools;
+import tech.ascs.cityworks.validate.utils.MappingUrlUtils;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -28,6 +28,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,6 +45,8 @@ public class ValidateComponent implements RequestValidate {
     private final ObjectMapper mapper;
 
     private final boolean FLAT_MODE;
+
+    private final Map<String, String> urlMapping = new ConcurrentHashMap<>();
 
     public ValidateComponent(SchemaValidateProperties properties,
                              ObjectMapper mapper,
@@ -74,8 +77,8 @@ public class ValidateComponent implements RequestValidate {
                     RequestMethod requestMethod = RequestMethod.valueOf(request.getMethod());
                     if (!StringUtils.isEmpty(url) &&
                             bean.checkHasValidateComponent(requestMethod, url)) {
-                        Map<String, Object> map = buildValidateMap(bean, args);
-                        validateResult.addAll(bean.validate(requestMethod, url, convertMapToJsonNode(map)));
+                        Object validateData = buildValidateMap(bean, args);
+                        validateResult.addAll(bean.validate(requestMethod, url, convertMapToJsonNode(validateData)));
                     }
                 });
         if (logger.isDebugEnabled()) {
@@ -100,10 +103,14 @@ public class ValidateComponent implements RequestValidate {
             logger.error("Matching error and found 0 count url, return null");
             return null;
         }
-        return urls.iterator().next();
+        String url = urls.iterator().next();
+        if (!urlMapping.containsKey(url)) {
+            urlMapping.put(url, MappingUrlUtils.pathVariableConvert(url));
+        }
+        return urlMapping.get(url);
     }
 
-    private JsonNode convertMapToJsonNode(Map<String, Object> map) {
+    private JsonNode convertMapToJsonNode(Object map) {
         try {
             String json = mapper.writeValueAsString(map);
             return mapper.readTree(json);
@@ -113,18 +120,53 @@ public class ValidateComponent implements RequestValidate {
         }
     }
 
-    private Map<String, Object> buildValidateMap(RequestHandlerValidate bean, Object[] args) {
+    private Object buildValidateMap(RequestHandlerValidate bean, Object[] args) {
+        if (FLAT_MODE) {
+            return buildFlatValidateData(bean, args);
+        } else {
+            return buildValidateData(bean, args);
+        }
+    }
+
+    private Object buildFlatValidateData(RequestHandlerValidate bean, Object[] args) {
+        //检查是否存在array类型
+        Optional<MethodParameter> optParame = Stream.of(bean.getMethod().getMethodParameters()).filter(arg -> arg.hasParameterAnnotation(RequestBody.class))
+                .filter(arg -> args[arg.getParameterIndex()] instanceof Collection || checkIsStringAndStartWith(args[arg.getParameterIndex()], "["))
+                .findAny();
+        if (optParame.isPresent()) {
+            return parseCollectionRequestBody(args[optParame.get().getParameterIndex()]);
+        } else {
+            return buildFlatValidateMap(bean, args);
+        }
+    }
+
+    private Map<String, Object> buildFlatValidateMap(RequestHandlerValidate bean, Object[] args) {
         Map<String, Object> map = new HashMap<>();
         Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter -> {
                     Object data = args[methodParameter.getParameterIndex()];
                     if (data == null) return;
                     if (ignore(data)) return;
                     if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
-                        if (FLAT_MODE) {
-                            map.putAll(parseRequestBody(data));
-                        } else {
-                            map.put(methodParameter.getParameterName(), selectMapOrString(data));
-                        }
+                        map.putAll(parseRequestBody(data));
+                    } else if (methodParameter.getParameterAnnotation(PathVariable.class) != null) {
+                        map.put(findPathVariableName(methodParameter), data);
+                    } else {
+                        map.putAll(parseRequestParam(methodParameter, data));
+                    }
+                }
+        );
+
+        return map;
+    }
+
+    private Map<String, Object> buildValidateData(RequestHandlerValidate bean, Object[] args) {
+        Map<String, Object> map = new HashMap<>();
+        Stream.of(bean.getMethod().getMethodParameters()).forEach(methodParameter -> {
+                    Object data = args[methodParameter.getParameterIndex()];
+                    if (data == null) return;
+                    if (ignore(data)) return;
+                    if (methodParameter.getParameterAnnotation(RequestBody.class) != null) {
+                        map.put(methodParameter.getParameterName(), selectMapOrString(data));
                     } else if (methodParameter.getParameterAnnotation(PathVariable.class) != null) {
                         map.put(findPathVariableName(methodParameter), data);
                     } else {
@@ -176,6 +218,19 @@ public class ValidateComponent implements RequestValidate {
         return returnData;
     }
 
+    private Collection parseCollectionRequestBody(Object data) {
+        if (data instanceof String) {
+            try {
+                return mapper.readValue(data.toString(), Collection.class);
+            } catch (IOException e) {
+                logger.info("this is not json data");
+                return null;
+            }
+        } else {
+            return (Collection) data;
+        }
+    }
+
     private Map parseObjectToMap(String parameterName, Object data) {
         try {
             Set<Map.Entry> entries = mapper.convertValue(data, HashMap.class).entrySet();
@@ -195,16 +250,21 @@ public class ValidateComponent implements RequestValidate {
                 HttpSession.class.isAssignableFrom(data.getClass());
     }
 
-    private String findPathVariableName(MethodParameter parameter){
+    private String findPathVariableName(MethodParameter parameter) {
         return Optional.ofNullable(parameter.getParameterName())
-                    .orElse(findPathVariableAnnName(parameter.getParameterAnnotation(PathVariable.class)));
+                .orElse(findPathVariableAnnName(parameter.getParameterAnnotation(PathVariable.class)));
     }
 
-    private String findPathVariableAnnName(PathVariable pathVariable){
-        if(StringUtils.isEmpty(pathVariable.name())){
+    private String findPathVariableAnnName(PathVariable pathVariable) {
+        if (StringUtils.isEmpty(pathVariable.name())) {
             return pathVariable.value();
-        }else {
+        } else {
             return pathVariable.name();
         }
+    }
+
+    private boolean checkIsStringAndStartWith(Object data, String str) {
+        Assert.notNull(data, "Check data not be null");
+        return data instanceof String && data.toString().startsWith(str);
     }
 }

@@ -6,10 +6,9 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.FileCopyUtils;
 
-import java.io.*;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * Created by RenJie on 2017/7/14 0014.

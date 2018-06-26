@@ -3,11 +3,6 @@ package tech.ascs.cityworks.validate;
 import com.networknt.schema.ValidationMessage;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.aop.aspectj.MethodInvocationProceedingJoinPoint;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import tech.ascs.cityworks.validate.base.RequestValidate;
@@ -33,7 +28,7 @@ import java.util.Set;
  * </ul>
  */
 //@Aspect
-public class ValidateInterceptor  implements MethodInterceptor{
+public class ValidateInterceptor  implements MethodInterceptor {
 
     private final RequestValidate validateComponent;
     private final ValidateMessageConvert convert;
