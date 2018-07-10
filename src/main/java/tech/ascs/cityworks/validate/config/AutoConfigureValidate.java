@@ -1,5 +1,6 @@
 package tech.ascs.cityworks.validate.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import tech.ascs.cityworks.validate.ValidateComponent;
 import tech.ascs.cityworks.validate.ValidateInterceptor;
 import tech.ascs.cityworks.validate.aspectj.ContainsMatchingPointcut;
+import tech.ascs.cityworks.validate.base.DisablingJsonIgnoreIntrospector;
 import tech.ascs.cityworks.validate.base.RequestValidate;
 import tech.ascs.cityworks.validate.base.ValidateMessageConvert;
 import tech.ascs.cityworks.validate.convert.ChineseValidateMessageConvert;
@@ -31,25 +33,32 @@ public class AutoConfigureValidate {
 
     private final boolean IS_DEBUG_ENABLE = logger.isDebugEnabled();
 
+    //    @Bean("validateObjectMapper")
+    private ObjectMapper validateObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.setAnnotationIntrospector(new DisablingJsonIgnoreIntrospector());
+        return mapper;
+    }
+
 
     @Bean
     @ConfigurationProperties("schema")
-    public SchemaValidateProperties schemaValidateProperties(){
+    public SchemaValidateProperties schemaValidateProperties() {
         return new SchemaValidateProperties();
     }
 
     @Bean
     @ConditionalOnMissingBean(name = "validateComponent")
     public RequestValidate validateComponent(ApplicationContext applicationContext,
-                                             ObjectMapper mapper,
-                                             SchemaValidateProperties properties){
-        logger.info("No found bean {}, using default bean validateComponent",ValidateComponent.class.getName());
-        return new ValidateComponent(properties,mapper,applicationContext);
+                                             SchemaValidateProperties properties) {
+        logger.info("No found bean {}, using default bean validateComponent", ValidateComponent.class.getName());
+        return new ValidateComponent(properties, validateObjectMapper(), applicationContext);
     }
 
     @Bean
     @ConditionalOnMissingBean(name = "validateMessageConvert")
-    public ValidateMessageConvert validateMessageConvert(){
+    public ValidateMessageConvert validateMessageConvert() {
         return new ChineseValidateMessageConvert();
     }
 
@@ -62,19 +71,20 @@ public class AutoConfigureValidate {
         advisor.setAdviceBeanName("validateInterceptor");
         return advisor;
     }
+
     @Bean
     @ConditionalOnMissingBean(name = "validateInterceptor")
     public MethodInterceptor validateInterceptor(RequestValidate validateComponent,
-                                                 ValidateMessageConvert convert){
-        logger.info("No found bean {}, using default bean validateInterceptor",ValidateInterceptor.class.getName());
+                                                 ValidateMessageConvert convert) {
+        logger.info("No found bean {}, using default bean validateInterceptor", ValidateInterceptor.class.getName());
         return new ValidateInterceptor(validateComponent, convert);
     }
 
     private Set<Class<?>> findClassesFromNames(Collection<String> annotations) throws ClassNotFoundException {
         Set<Class<?>> result = new HashSet<>();
         System.out.println(annotations);
-        for (String clazzStr : annotations){
-            if(IS_DEBUG_ENABLE){
+        for (String clazzStr : annotations) {
+            if (IS_DEBUG_ENABLE) {
                 logger.debug("Find annotation for full path : {}", clazzStr);
             }
             result.add(Class.forName(clazzStr));

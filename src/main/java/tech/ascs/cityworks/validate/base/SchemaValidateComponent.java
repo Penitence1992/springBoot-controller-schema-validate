@@ -24,7 +24,7 @@ import java.util.Set;
  */
 public class SchemaValidateComponent implements SchemaValidate {
 
-    private static JsonSchemaFactory JSON_SCHEMA_FACTORY = new JsonSchemaFactory();
+    private static JsonSchemaFactory JSON_SCHEMA_FACTORY = JsonSchemaFactory.getInstance();
 
     private final static Logger LOGGER = LoggerFactory.getLogger(SchemaValidateComponent.class);
 

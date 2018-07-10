@@ -2,7 +2,7 @@ package tech.ascs.cityworks.validate.base;
 
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
-import tech.ascs.cityworks.validate.config.AutoConfigureValidateSelector;
+import tech.ascs.cityworks.validate.config.AutoConfigureValidate;
 
 import java.lang.annotation.*;
 
@@ -12,7 +12,7 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import({AutoConfigureValidateSelector.class})
+@Import({AutoConfigureValidate.class})
 @EnableAspectJAutoProxy
 public @interface EnableSchemaValidation {
 
