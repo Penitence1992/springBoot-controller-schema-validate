@@ -130,7 +130,7 @@ public class ConvertYmlToSchema {
             param = parseRef(ref, data);
         }
         String in = param.get("in").toString();
-        paramName = param.get("name").toString();
+        paramName = Optional.ofNullable(param.get("name")).orElse("body".equals(in)? "body" : "param" ).toString();
         //如果参数是位于query或者formData的,使用这种方式构造property
         if ("query".equals(in) || "formData".equals(in)) {
             Map content = new HashMap();
